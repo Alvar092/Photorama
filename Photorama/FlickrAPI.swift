@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import CoreData
 
 enum FlickrError: Error {
     case invalidJSONData
@@ -16,7 +17,7 @@ enum Method: String {
 }
 
 struct FlickrAPI {
-    private static let baseURLSting = "https://api.flickr.com/services/rest"
+    private static let baseURLString = "https://api.flickr.com/services/rest?method=flickr.interestingness.getList&api_key=a6d819499131071f158fd740860a5a88&format=json&nojsoncallback=1&extras=url_h,date_taken"
     
     private static let apiKey = "a6d819499131071f158fd740860a5a88"
     
@@ -31,14 +32,14 @@ struct FlickrAPI {
     }
     
     private static func flickrURL( method: Method, parameters: [String:String]?) -> URL {
-        var components = URLComponents(string: baseURLSting)!
+        var components = URLComponents(string: baseURLString)!
         
         var queryItems = [URLQueryItem]()
         
         let baseParams = [
             "method": method.rawValue,
             "format": "json",
-            "njsoncallback": "1",
+            "nojsoncallback": "1",
             "api_key": apiKey
         ]
         
@@ -58,7 +59,7 @@ struct FlickrAPI {
         return components.url!
     }
     
-    static func photos(fromJSON data: Data) -> PhotosResult {
+    static func photos(fromJSON data: Data, into context: NSManagedObjectContext) -> PhotosResult {
         do{
             let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
             
@@ -73,7 +74,7 @@ struct FlickrAPI {
             
             var finalPhotos = [Photo]()
             for photoJSON in photosArray {
-                if let photo = photo(fromJSON: photoJSON) {
+                if let photo = photo(fromJSON: photoJSON, into: context) {
                     finalPhotos.append(photo)
                 }
             }
@@ -90,11 +91,11 @@ struct FlickrAPI {
         }
     }
     
-    private static func photo(fromJSON json: [String: Any]) -> Photo? {
+    private static func photo(fromJSON json: [String: Any], into context: NSManagedObjectContext) -> Photo? {
         guard
             let photoID = json ["id"] as? String,
             let title = json["title"] as? String,
-            let dateString = json["dateTaken"] as? String,
+            let dateString = json["datetaken"] as? String,
             let photoURLString = json["url_h"] as? String,
             let url =  URL(string: photoURLString),
             let dateTaken = dateFormatter.date(from: dateString) else {
@@ -102,7 +103,15 @@ struct FlickrAPI {
             //don't have enough info to construct a photo
             return nil
         }
-        return Photo(title: title, photoID: photoID, remoteURL: url, dateTaken: dateTaken)
+        var photo: Photo!
+        context.performAndWait {
+            photo = Photo(context: context)
+            photo.title =  title
+            photo.photoID = photoID
+            photo.remoteURL = url as NSURL
+            photo.dateTaken = dateTaken 
+        }
+        return photo
     }
 }
 
