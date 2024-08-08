@@ -73,7 +73,7 @@
                     </view>
                     <navigationItem key="navigationItem" id="Nwo-j1-EHo"/>
                     <connections>
-                        <outlet property="collectionView" destination="ivT-5H-lMH" id="gUF-JS-jQj"/>
+                        <outlet property="collectionView" destination="ivT-5H-lMH" id="yLo-RS-OBL"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
